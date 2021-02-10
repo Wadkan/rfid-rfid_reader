@@ -35,8 +35,8 @@ class Authenticator(object):
                     member = line.split('|')
                     id = member[0]
                     key = member[1].strip()
-                    print "known key: %s" % key
-                    print "input key: %s" % rfidkey
+                    print("known key: %s" % key)
+                    print("input key: %s" % rfidkey)
                     if rfidkey == key:
                         logger.info("id:%s has successfully authenticated" % id)
                         text.close()
@@ -57,14 +57,14 @@ class Solenoid(object):
         self.pin = pin
         self.openduration = openduration
         self.setup_gpio()
-        
+
     # Setup GPIO (for later use)
     def setup_gpio(self):
-        
+
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.pin, GPIO.OUT)
-        
+
     # Open the door
     def open_door(self):
         logger.info("door is open")
@@ -73,12 +73,12 @@ class Solenoid(object):
         time.sleep(10.0)
         GPIO.output(self.pin, False)
         logger.info("door is closed")
- 
-    def blink_door(self): 
-        GPIO.output(self.pin, True) 
-        time.sleep(0.1) 
-        GPIO.output(self.pin, False) 
-    
+
+    def blink_door(self):
+        GPIO.output(self.pin, True)
+        time.sleep(0.1)
+        GPIO.output(self.pin, False)
+
 
 class Reader(object):
     '''
@@ -89,17 +89,17 @@ class Reader(object):
         '''
         Constructor
         '''
-        
+
         self.rfidInput = None
         self.incoming_message = None
         self.solenoid = solenoid
-        self.port= port 
+        self.port= port
         self.baudrate = baudrate
         self.thread = None
         self.lastkey = ''
         self.connection = None
 
-    
+
     # Validating the incoming message
     # upon success, input returned with message and checksum only
     def enclosing_tags_check(self):
@@ -121,15 +121,15 @@ class Reader(object):
         #length check
         if len(self.rfidInput) != 12:
             throws("Message is not correct length")
-        
-        
+
+
     # Get the rfid message, log/break if message format is bad
     def extract_message(self):
-        self.enclosing_tags_check() 
+        self.enclosing_tags_check()
         self.hex_check()
         self.compute_check_sum()
         self.rfidInput = self.rfidInput[:-2]
-    
+
     def hex_check(self):
         if not all(c in string.hexdigits for c in self.rfidInput):
             throws("Message contains invalid hex characters")
@@ -141,18 +141,18 @@ class Reader(object):
         uncomp = bytearray.fromhex(self.rfidInput)
         computed = (
             hex(uncomp[0] ^ uncomp[1] ^ uncomp[2] ^ uncomp[3] ^ uncomp[4]))
-    
-        print "Given checksum is %s" % given
-        print "Computed checksum is %s" % computed
+
+        print("Given checksum is %s" % given)
+        print("Computed checksum is %s" % computed)
         #logger.info("Given checksum is %s" % given)
         #logger.info("Computed checksum is %s" % computed)
         if computed != given:
             throws("Checksum is bad")
-            
+
 
     # Take the incoming message and do stuff
     def handle_message(self, solenoid):
-        
+
         logger.info("******** Start Message ********")
         logger.info("Received a new message")
         #logger.info("Received a new message: %s" % incoming_message)
@@ -173,10 +173,10 @@ class Reader(object):
             logger.info("")
 
     def stop(self):
-        
+
         self.connection = False
         self.thread.join()
-            
+
     def read_from_port(self, connection):
         self.connection = True
         stateMachine = TagStateMachine()
@@ -190,7 +190,7 @@ class Reader(object):
                     self.handle_message(self.solenoid)  # Parse the incoming message
             except:
                 traceback.print_exc()
-        
+
     def manual_release(self, connection):
         buttonPin = 16
         GPIO.setup(buttonPin,GPIO.IN, pull_up_down = GPIO.PUD_UP)
@@ -205,11 +205,11 @@ class Reader(object):
                     count = 0
                     while(GPIO.input(buttonPin) == False):
                         time.sleep(.1)
-                        count += 1 
-                        if count == 40: 
-                            self.solenoid.blink_door() 
-                            sp.call('/home/pi/rfid/rfidreader/updateACL') 
-                            self.solenoid.blink_door() 
+                        count += 1
+                        if count == 40:
+                            self.solenoid.blink_door()
+                            sp.call('/home/pi/rfid/rfidreader/updateACL')
+                            self.solenoid.blink_door()
                 else:
                     logger.info("******* Missed Debounce *******")
 
@@ -224,22 +224,22 @@ class Reader(object):
 class TagStateMachine:
     def __init__(self):
         self.buffer = ""
-        
+
     def handle_character(self, char):
         if len(char) != 0:
             startTag = "\x02"
             endTag = "\x03"
-            
+
             self.buffer += char
             if char == startTag:
                 self.buffer = startTag
             if char == endTag:
-                return True     
+                return True
         return False
-        
+
     def get_buffer(self):
         return self.buffer
-    
+
 def parse_args(args):
     """Takes command line arguments and processes them
 
@@ -274,7 +274,7 @@ def main():
     # parse the args
     args = parse_args(sys.argv)
     # setup the logger
-    print args.log
+    print(args.log)
     logger = log.setup_logger(args.log)
     # make a solenoid
     solenoid = Solenoid(args.solenoid, args.openduration)
